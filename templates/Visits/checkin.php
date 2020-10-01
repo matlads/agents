@@ -15,11 +15,10 @@
         <div class="visits form content">
             <?= $this->Form->create($visit) ?>
             <fieldset>
-                <legend><?= __('Add Visit') ?></legend>
+                <legend><?= __('Add Checkin') ?></legend>
                 <?php
                     echo $this->Form->control('company_id', ['options' => $companies, 'empty' => true]);
-		    echo $this->Form->control('checkin_time', [ 'empty' => true ]);
-		    echo $this->Form->control('checkout_time', [ 'empty' => true ]);
+                    echo $this->Form->control('checkin_time', ['empty' => true, 'default' => true]);
                 ?>
             </fieldset>
             <?= $this->Form->button(__('Submit')) ?>

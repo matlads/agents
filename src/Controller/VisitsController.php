@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use Cake\I18n\FrozenTime;
+
 /**
  * Visits Controller
  *
@@ -18,8 +20,11 @@ class VisitsController extends AppController
      */
     public function index()
     {
+	$user = $this->Authentication->getIdentity();
+
         $this->paginate = [
             'contain' => ['Companies', 'Users'],
+	    'conditions' => [ 'Users.id = ' => $user->get('id') ]
         ];
         $visits = $this->paginate($this->Visits);
 
@@ -52,6 +57,32 @@ class VisitsController extends AppController
         $visit = $this->Visits->newEmptyEntity();
         if ($this->request->is('post')) {
             $visit = $this->Visits->patchEntity($visit, $this->request->getData());
+            if ($this->Visits->save($visit)) {
+                $this->Flash->success(__('The visit has been saved.'));
+
+                return $this->redirect(['action' => 'index']);
+            }
+            $this->Flash->error(__('The visit could not be saved. Please, try again.'));
+        }
+        $companies = $this->Visits->Companies->find('list', ['limit' => 200]);
+        $users = $this->Visits->Users->find('list', ['limit' => 200]);
+        $this->set(compact('visit', 'companies', 'users'));
+    }
+
+    /**
+     * checkin method
+     *
+     * @return \Cake\Http\Response|null|void Redirects on successful add, renders view otherwise.
+     */
+    public function checkin()
+    {
+        $visit = $this->Visits->newEmptyEntity();
+	$user = $this->Authentication->getIdentity();
+
+        if ($this->request->is('post')) {
+            $visit = $this->Visits->patchEntity($visit, $this->request->getData());
+	    $visit->user_id = $user->id;
+
             if ($this->Visits->save($visit)) {
                 $this->Flash->success(__('The visit has been saved.'));
 
@@ -106,6 +137,30 @@ class VisitsController extends AppController
         } else {
             $this->Flash->error(__('The visit could not be deleted. Please, try again.'));
         }
+
+        return $this->redirect(['action' => 'index']);
+    }
+
+    // checkout is nearly a clone of edit
+    public function checkout($id = null)
+    {
+        $visit = $this->Visits->get($id, [
+            'contain' => [],
+        ]);
+        if ($this->request->is(['patch', 'post', 'put'])) {
+            $visit = $this->Visits->patchEntity($visit, $this->request->getData());
+	    $visit->checkout_time = FrozenTime::now();
+
+            if ($this->Visits->save($visit)) {
+                $this->Flash->success(__('The checkout has been recorded.'));
+
+                return $this->redirect(['action' => 'index']);
+            }
+            $this->Flash->error(__('The visit could not be saved. Please, try again.'));
+        }
+        $companies = $this->Visits->Companies->find('list', ['limit' => 200]);
+        $users = $this->Visits->Users->find('list', ['limit' => 200]);
+        $this->set(compact('visit', 'companies', 'users'));
 
         return $this->redirect(['action' => 'index']);
     }
